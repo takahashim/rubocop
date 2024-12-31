@@ -96,6 +96,8 @@ module RuboCop
         MSG_DISABLED = 'Frozen string literal comment must be set to `true`.'
         SHEBANG = '#!'
 
+        FROZEN_STRING_LITERAL_DISABLED = '# frozen_string_literal: false'
+
         def on_new_investigation
           return if processed_source.tokens.empty?
 
@@ -104,6 +106,8 @@ module RuboCop
             ensure_no_comment(processed_source)
           when :always_true
             ensure_enabled_comment(processed_source)
+          when :always_needed
+            ensure_disabled_comment_unless_exists(processed_source)
           else
             ensure_comment(processed_source)
           end
@@ -121,6 +125,12 @@ module RuboCop
           return if frozen_string_literal_comment_exists?
 
           missing_offense(processed_source)
+        end
+
+        def ensure_disabled_comment_unless_exists(processed_source)
+          return if frozen_string_literal_comment_exists?
+
+          missing_false_offense(processed_source)
         end
 
         def ensure_enabled_comment(processed_source)
@@ -167,6 +177,12 @@ module RuboCop
           add_offense(range, message: MSG_MISSING_TRUE) { |corrector| insert_comment(corrector) }
         end
 
+        def missing_false_offense(processed_source)
+          range = source_range(processed_source.buffer, 0, 0)
+
+          add_offense(range, message: MSG_MISSING) { |corrector| insert_falsey_comment(corrector) }
+        end
+
         def unnecessary_comment_offense(processed_source)
           frozen_string_literal_comment = frozen_string_literal_comment(processed_source)
 
@@ -203,6 +219,16 @@ module RuboCop
           end
         end
 
+        def insert_falsey_comment(corrector)
+          comment = last_special_comment(processed_source)
+
+          if comment
+            corrector.insert_after(line_range(comment.line), following_falsey_comment)
+          else
+            corrector.insert_before(processed_source.buffer.source_range, preceding_falsey_comment)
+          end
+        end
+
         def line_range(line)
           processed_source.buffer.line_range(line)
         end
@@ -213,6 +239,14 @@ module RuboCop
 
         def following_comment
           "\n#{FROZEN_STRING_LITERAL_ENABLED}"
+        end
+
+        def preceding_falsey_comment
+          "#{FROZEN_STRING_LITERAL_DISABLED}\n"
+        end
+
+        def following_falsey_comment
+          "\n#{FROZEN_STRING_LITERAL_DISABLED}"
         end
       end
     end

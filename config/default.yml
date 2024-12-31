@@ -4053,6 +4053,10 @@ Style/FrozenStringLiteralComment:
     # similarly to the `always` style, but will also change any disabled
     # comments (e.g. `# frozen_string_literal: false`) to be enabled.
     - always_true
+    # `always_needed` will add the frozen string literal comment to a file,
+    # similarly to the `always` style, but the value is `false`
+    # (e.g. add `# frozen_string_literal: false`).
+    - always_needed
     # `never` will enforce that the frozen string literal comment does not
     # exist in a file.
     - never
